@@ -1,18 +1,29 @@
 /* Hermes Deck renderer — feed-driven re-render with CSS transitions.
-   Compact + retractable: 280px panel, collapsible cards (chevron headers,
-   localStorage-persisted), agent rows expand into a detail view with a
-   1s-polled streaming transcript. Layout change only — glass styling comes
-   straight from tokens.css (--hud-fill / --hud-edge / --hud-inner). */
+   Free-floating island layout (iris hud.css): each section is its own
+   .hud-surface island with a small-caps label row inside it; collapsed
+   sections become small chip-islands. Agent rows expand into a detail
+   view with a 1s-polled streaming transcript. Layout change only —
+   glass styling comes straight from tokens.css (--hud-fill / --hud-edge /
+   --hud-inner). */
 "use strict";
 
-const cardsEl = document.getElementById("cards");
-const clockEl = document.getElementById("clock");
-const hbEl = document.getElementById("hb");
-const hbLabel = document.getElementById("hb-label");
-const summaryEl = document.getElementById("summary");
+const shellEl = document.getElementById("panel");
 
-let lastData = null;
 let lastSig = "";
+
+/* ---------- heartbeat light lives in the agents island label row ---------- */
+let hbEl = null;
+
+function ensureHeartbeatEl() {
+  if (hbEl) return;
+  const row = shellEl.querySelector('.island-agents .island-label-row');
+  if (!row) return;
+  hbEl = document.createElement("span");
+  hbEl.className = "hb";
+  hbEl.innerHTML = `<span class="hb-dot"></span>`;
+  hbEl.title = "heartbeat live";
+  row.appendChild(hbEl);
+}
 
 /* ---------- collapsed-state persistence (localStorage) ---------- */
 const LS_KEY = "hermes-deck.collapsed.v1";
@@ -26,7 +37,7 @@ function loadCollapsed() {
   }
 }
 let collapsedMap = loadCollapsed();
-// Default state: ONLY the agents card expanded; everything else collapsed.
+// Default state: ONLY the agents island expanded; everything else chips.
 if (!Object.keys(collapsedMap).length) {
   collapsedMap = { agents: false, status: true, vitals: true, screen: true };
 }
@@ -75,7 +86,7 @@ function findDelegationId(...strs) {
   return null;
 }
 
-/* ---------- one-line summaries for collapsed cards ---------- */
+/* ---------- one-line summaries for collapsed chip-islands ---------- */
 function agentsSummary(c) {
   const items = Array.isArray(c.items) ? c.items : [];
   if (!items.length) return "idle";
@@ -126,24 +137,23 @@ function agentRow(it, idx) {
   </div>`;
 }
 
-/* ---------- collapsible card shell ---------- */
-function cardShell(t, title, bodyHtml, extraClass = "") {
+/* ---------- collapsible island shell (label row = drag strip) ---------- */
+function islandShell(t, title, bodyHtml) {
   const col = isCollapsed(t);
-  return `<div class="card card-${esc(t)} ${col ? "collapsed" : ""} ${extraClass}" data-type="${esc(t)}">
-    <button class="card-head" data-card-toggle="${esc(t)}" aria-expanded="${col ? "false" : "true"}">
+  const label = String(title || t).toUpperCase();
+  return `<section class="hud-surface island-${esc(t)} ${col ? "collapsed" : ""}" data-type="${esc(t)}">
+    <div class="island-label-row" data-card-toggle="${esc(t)}" role="button" aria-expanded="${col ? "false" : "true"}" tabindex="-1">
       <span class="chev">▸</span>
-      <span class="section-label">${esc(title || t)}</span>
-      <span class="card-mini" data-mini="${esc(t)}"></span>
-    </button>
-    <div class="card-body-wrap">
-      <div class="card-body-inner">
-        <div class="card-body">${bodyHtml}</div>
-      </div>
+      <span class="island-label">${esc(label)}</span>
+      <span class="island-mini" data-mini="${esc(t)}"></span>
     </div>
-  </div>`;
+    <div class="island-body-wrap">
+      <div class="island-body">${bodyHtml}</div>
+    </div>
+  </section>`;
 }
 
-/* ---------- card body renderers ---------- */
+/* ---------- island body renderers ---------- */
 function agentsBody(c) {
   const items = Array.isArray(c.items) ? c.items : [];
   const rows = items.length
@@ -192,19 +202,18 @@ function fallbackBody(c) {
 function renderCard(c) {
   const t = c.type || "unknown";
   if (t === "agents") {
-    return cardShell(t, c.title || "delegated agents", agentsBody(c));
+    return islandShell(t, c.title || "delegated agents", agentsBody(c));
   }
   if (t === "vitals") {
-    return cardShell(t, c.title || "vitals", vitalsBody(c));
+    return islandShell(t, c.title || "vitals", vitalsBody(c));
   }
   if (t === "status") {
-    return cardShell(t, c.title || "status", statusBody(c));
+    return islandShell(t, c.title || "status", statusBody(c));
   }
   if (t === "screen") {
-    return cardShell(t, c.title || "screen sense", screenBody(c));
+    return islandShell(t, c.title || "screen sense", screenBody(c));
   }
-  return `<div class="card" data-type="${esc(t)}">
-    <div class="fallback-row">${esc(c.title || t)}${c.value ? " · " + esc(c.value) : ""}</div></div>`;
+  return islandShell(t, c.title || t, fallbackBody(c));
 }
 
 /* ---------- streaming transcript ---------- */
@@ -233,7 +242,7 @@ async function pollExpandedLog() {
     stopLogPoll();
     return;
   }
-  const itemEl = cardsEl.querySelector(`.agent-item.expanded`);
+  const itemEl = shellEl.querySelector(`.agent-item.expanded`);
   if (!itemEl) {
     stopLogPoll();
     return;
@@ -309,26 +318,19 @@ function render(data) {
   const sig = feedSig(data);
   if (sig === lastSig) return;           // no change → skip DOM churn
   lastSig = sig;
-  lastData = data;
-  cardsEl.innerHTML = data.cards.map(renderCard).join("");
+  shellEl.innerHTML = data.cards.map(renderCard).join("");
   // collapsed chips
   for (const c of data.cards) {
-    const cardEl = cardsEl.querySelector(`.card[data-type="${c.type || "unknown"}"]`);
-    const mini = cardEl?.querySelector(".card-mini");
+    const cardEl = shellEl.querySelector(`.hud-surface[data-type="${c.type || "unknown"}"]`);
+    const mini = cardEl?.querySelector(".island-mini");
     if (mini) mini.innerHTML = miniFor(c);
   }
-  const agents = data.cards.find((c) => c.type === "agents");
-  const items = agents && Array.isArray(agents.items) ? agents.items : [];
-  const running = items.filter((it) => it.status === "running").length;
-  summaryEl.textContent = running
-    ? `${running} delegated agent${running === 1 ? "" : "s"} running`
-    : `${items.length} agent${items.length === 1 ? "" : "s"} · idle`;
+  ensureHeartbeatEl();
   // Reopen the previously-expanded agent row (re-render wipes the DOM).
   if (expandedId != null) {
-    const el = cardsEl.querySelector(`.agent-item[data-agent-id="${expandedId}"]`);
+    const el = shellEl.querySelector(`.agent-item[data-agent-id="${expandedId}"]`);
     if (el) {
       el.classList.add("expanded");
-      el.querySelector(".agent-row")?.setAttribute("aria-expanded", "true");
       pollExpandedLog();
     }
   }
@@ -336,8 +338,6 @@ function render(data) {
 }
 
 function updateHeartbeat() {
-  // Reflect the main process's consent file age (main pushes hbAgeMs in feed
-  // events via a side channel; fallback: local ticking since last touch).
   fetchHeartbeat();
 }
 
@@ -348,12 +348,15 @@ async function fetchHeartbeat() {
   try {
     const res = await window.deck.getHeartbeatAge();
     const age = typeof res === "number" ? res : null;
-    if (age != null && age < 15000) {
-      hbEl.classList.remove("stale");
-      hbLabel.textContent = "heartbeat live";
-    } else {
-      hbEl.classList.add("stale");
-      hbLabel.textContent = "heartbeat stale";
+    ensureHeartbeatEl();
+    if (hbEl) {
+      if (age != null && age < 15000) {
+        hbEl.classList.remove("stale");
+        hbEl.title = "heartbeat live";
+      } else {
+        hbEl.classList.add("stale");
+        hbEl.title = "heartbeat stale";
+      }
     }
   } catch {
     /* bridge unavailable */
@@ -362,25 +365,16 @@ async function fetchHeartbeat() {
   }
 }
 
-/* ---------- clock (live badge) ---------- */
-function tickClock() {
-  const d = new Date();
-  const p = (n) => String(n).padStart(2, "0");
-  clockEl.textContent = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
-setInterval(tickClock, 1000);
-tickClock();
-
 /* ---------- wiring ---------- */
-cardsEl.addEventListener("click", (ev) => {
-  // 1) card chevron headers → collapse/expand whole card
-  const headBtn = ev.target.closest(".card-head");
-  if (headBtn && headBtn.dataset.cardToggle) {
-    const t = headBtn.dataset.cardToggle;
-    const cardEl = headBtn.closest(".card");
-    const nowCollapsed = !cardEl.classList.contains("collapsed");
-    cardEl.classList.toggle("collapsed", nowCollapsed);
-    headBtn.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
+shellEl.addEventListener("click", (ev) => {
+  // 1) island label row → collapse/expand whole island
+  const labelRow = ev.target.closest(".island-label-row");
+  if (labelRow && labelRow.dataset.cardToggle) {
+    const t = labelRow.dataset.cardToggle;
+    const islandEl = labelRow.closest(".hud-surface");
+    const nowCollapsed = !islandEl.classList.contains("collapsed");
+    islandEl.classList.toggle("collapsed", nowCollapsed);
+    labelRow.setAttribute("aria-expanded", nowCollapsed ? "false" : "true");
     setCollapsed(t, nowCollapsed);
     return;
   }
@@ -392,7 +386,7 @@ cardsEl.addEventListener("click", (ev) => {
     const id = item.getAttribute("data-agent-id");
     const wasExpanded = item.classList.contains("expanded");
     // accordion: close whichever row is open
-    const open = cardsEl.querySelector(".agent-item.expanded");
+    const open = shellEl.querySelector(".agent-item.expanded");
     if (open && open !== item) {
       open.classList.remove("expanded");
       open.querySelector(".agent-row")?.setAttribute("aria-expanded", "false");

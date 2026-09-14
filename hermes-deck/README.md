@@ -1,9 +1,11 @@
 # Hermes Deck (Electron)
 
-Floating compact glass HUD for the Hermes desktop — a faithful port of
+Floating glass HUD for the Hermes desktop — a faithful port of
 iris's "Deep Space" glass design system, driven by the existing
-`~/.hermes/deck/display.json` feed. Layout-first design: ~280px panel,
-every card retractable, height hugs content.
+`~/.hermes/deck/display.json` feed. Chrome-free island layout:
+no app header, no footer, no outer panel — every section is its own
+free-floating `.hud-surface` island (iris hud.css), ~280px wide,
+height hugs content.
 
 ## Layout
 
@@ -16,29 +18,36 @@ every card retractable, height hugs content.
   age, visibility toggle, `readFileTail(path, maxLines)` (validated in the
   main process), `resolveLog(delegationId)`.
 - `renderer/` — `tokens.css` (iris tokens, verbatim values), `deck.css`
-  (glass panel + collapsible cards, iris hud.css/deck.css patterns),
-  `deck.js` (feed render, accordion agent rows, 1s streaming-log poller),
-  `index.html`.
+  (free-floating HUD islands — one glass recipe from iris hud.css:
+  `.hud-surface` fill/edge/inner-highlight, label-row drag strips,
+  collapsible bodies, agent rows, log block), `deck.js` (feed render,
+  island collapse state, accordion agent rows, 1s streaming-log poller),
+  `index.html` (transparent shell only — islands are built by deck.js).
 - Vendored runtime: Electron 42.5.0 with `LSUIElement=true` + bundle id
   patched (no Dock icon). Not included in this repo; see launcher notes.
 
 ## Interaction model
 
-- Every card section is collapsible via a thin chevron header row;
-  collapsed sections render as one-line summary chips. Collapse state is
-  persisted in `localStorage` (`hermes-deck.collapsed.v1`).
-- Default state: ONLY "Delegated Agents" expanded; status / vitals /
-  screen cards collapse to chips. The panel height hugs its content, so
-  the agents-only view is short (header + agents + footer).
-- Clicking an agent row expands an inline detail view (accordion, one at a
-  time): status chip, full detail text, started/relative timestamp, and a
-  LIVE TRANSCRIPT block — the last ~60 lines of the delegation's
-  `task-N.log`, monospace ~9px, auto-scrolled to the bottom, re-read every
-  1s while expanded. Collapsing the row stops the poller.
+- Every section renders as its own glass island with a small-caps label
+  row INSIDE it (iris "DELEGATED AGENTS" voice); that label row is the
+  drag strip (`-webkit-app-region: drag`) and the collapse toggle.
+- Collapsed sections render as small floating chip-islands (label +
+  one-line mono summary). Collapse state is persisted in `localStorage`
+  (`hermes-deck.collapsed.v1`).
+- Default state: ONLY "Delegated agents" expanded; status / vitals /
+  screen collapse to chips. The window is transparent and sized to hug
+  the island stack, so islands read as floating directly on the desktop.
+- A tiny mint heartbeat light (live/stale) sits at the right end of the
+  agents island's label row — the consent-gate indicator.
+- Clicking an agent row expands an inline detail view (accordion, one at
+  a time): status chip, full detail text, started/relative timestamp, and
+  a LIVE TRANSCRIPT block — the last ~60 lines of the delegation's
+  `task-N.log`, monospace ~9px, auto-scrolled to the bottom, re-read
+  every 1s while expanded. Collapsing the row stops the poller.
 
 ## Launch
 
-- Installed app: `open -a "Hermes Deck"` (starts visible, floating panel)
+- Installed app: `open -a "Hermes Deck"` (starts visible, floating islands)
 - Hidden start: `open -a "Hermes Deck" --args --hidden`
 - Debug: relaunch with `--remote-debugging-port=9222` (single-instance
   lock means the running instance must be quit first).

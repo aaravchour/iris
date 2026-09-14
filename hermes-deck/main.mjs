@@ -67,9 +67,10 @@ function createWindow() {
     skipTaskbar: true,
     fullscreenable: false,
     backgroundColor: "#00000000",
-    // Native macOS glass underlay (iris-style HUD). Falls back to CSS
-    // backdrop-filter when unavailable (non-mac).
-    ...(IS_MAC ? { vibrancy: "hud" } : {}),
+    // NO native vibrancy: iris's HUD mode draws glass islands with their own
+    // --hud-fill tint over the transparent window ("The OS behind a
+    // transparent window can't be backdrop-blurred"). A vibrancy underlay
+    // would paint a plate behind the whole window and box the free islands.
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
