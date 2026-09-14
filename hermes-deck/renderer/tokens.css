@@ -1,0 +1,91 @@
+/* =====================================================================
+   Hermes Deck tokens - ported from iris "Deep Space" system
+   (~/Developer/iris/src/styles/tokens.css). Dark-only. Electric cyan.
+   The glass recipe (--hud-fill / --hud-edge / --hud-inner) is THE recipe:
+   panel, chips, rows, footer all draw from it so the deck reads as one
+   system. Text shadows for bright wallpapers; no heavy drop shadows.
+   ===================================================================== */
+
+:root {
+  /* ===== Base space ===== */
+  --bg-0: #0b111c;
+  --bg-1: #0e1522;
+  --bg-2: #151d2c;
+
+  /* ===== Accents ===== */
+  --cyan: #22d3ee;
+  --cyan-bright: #67e8f9;
+  --cyan-soft: #7dd3fc;
+  --cyan-rgb: 34, 211, 238;
+
+  /* ===== Status ===== */
+  --amber: #f5b04a;
+  --amber-rgb: 245, 176, 74;
+  --mint: #2dd2af;
+  --mint-rgb: 45, 210, 175;
+  --coral: #f87171;
+  --coral-rgb: 248, 113, 113;
+
+  /* ===== Text ===== */
+  --text: #e8f0fa;
+  --text-soft: #a9b9cd;
+  --muted: #64748e;
+  --text-dim: #4c5872;
+
+  /* ===== Glass surfaces ===== */
+  --panel: rgba(29, 40, 58, 0.78);
+  --panel-solid: #1a2333;
+  --panel-recessed: rgba(24, 33, 49, 0.74);
+
+  /* ===== HUD glass (THE one recipe, iris tokens.css) ===== */
+  --hud-fill: linear-gradient(180deg, rgba(26, 36, 57, 0.62), rgba(10, 16, 28, 0.66));
+  --hud-fill-strong: linear-gradient(180deg, rgba(26, 36, 57, 0.72), rgba(10, 16, 28, 0.76));
+  --hud-chip: rgba(22, 30, 47, 0.68);
+  --hud-edge: rgba(255, 255, 255, 0.18);
+  --hud-inner: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --hud-lift: 0 1px 8px rgba(0, 0, 0, 0.2);
+  --hud-text: #f2f7ff;
+  --hud-text-soft: #c6d2e4;
+  --hud-text-dim: #a7b7cd;
+  --hud-shadow-text: 0 1px 3px rgba(0, 0, 0, 0.65);
+  --hud-shadow-text-soft: 0 1px 2px rgba(0, 0, 0, 0.55);
+
+  /* ===== Radii / space / type (whole pixels; floor 10px) ===== */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+  --s-05: 2px;
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --t-2xs: 10px;
+  --t-xs: 11px;
+  --t-sm: 12px;
+  --t-md: 13px;
+  --t-base: 14px;
+
+  --w-normal: 400;
+  --w-medium: 500;
+  --w-semi: 600;
+  --w-bold: 700;
+
+  --tr-label: 0.08em;
+  --tr-caps: 0.14em;
+
+  --lh-tight: 1.25;
+  --lh-snug: 1.4;
+
+  --font-ui: "Inter Variable", "Inter", system-ui, sans-serif;
+  --font-display: "Space Grotesk Variable", "Space Grotesk", var(--font-ui);
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 0.15s;
+  --dur-mid: 0.24s;
+
+  color-scheme: dark;
+}

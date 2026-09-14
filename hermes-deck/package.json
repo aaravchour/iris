@@ -1,0 +1,14 @@
+{
+  "name": "hermes-deck",
+  "productName": "Hermes Deck",
+  "version": "1.0.0",
+  "description": "Hermes Deck — floating glass HUD driven by ~/.hermes/deck/display.json",
+  "main": "main.mjs",
+  "private": true,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "42.5.0"
+  }
+}
